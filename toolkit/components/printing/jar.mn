@@ -9,8 +9,10 @@ toolkit.jar:
    content/global/printPageSetup.xul                (content/printPageSetup.xul)
 #endif
    content/global/printPreviewProgress.js           (content/printPreviewProgress.js)
+   content/global/printPreviewProgress.css          (content/printPreviewProgress.css)
    content/global/printPreviewProgress.xul          (content/printPreviewProgress.xul)
    content/global/printProgress.js                  (content/printProgress.js)
+   content/global/printProgress.css                 (content/printProgress.css)
    content/global/printProgress.xul                 (content/printProgress.xul)
 #endif
    content/global/printPreviewToolbar.js            (content/printPreviewToolbar.js)

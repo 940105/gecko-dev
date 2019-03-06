@@ -17,23 +17,6 @@ var docTitle = "";
 var docURL   = "";
 var progressParams = null;
 
-function ellipseString(aStr, doFront) {
-  if (!aStr)
-    return "";
-
-  if (aStr.length > 3 && (aStr.substr(0, 3) == "..." || aStr.substr(aStr.length - 4, 3) == "..."))
-    return aStr;
-
-  var fixedLen = 64;
-  if (aStr.length <= fixedLen)
-    return aStr;
-
-  if (doFront)
-    return "..." + aStr.substr(aStr.length - fixedLen, fixedLen);
-
-  return aStr.substr(0, fixedLen) + "...";
-}
-
 // all progress notifications are done through the nsIWebProgressListener implementation...
 var progressListener = {
 
@@ -45,16 +28,19 @@ var progressListener = {
   onProgressChange(aWebProgress, aRequest, aCurSelfProgress, aMaxSelfProgress, aCurTotalProgress, aMaxTotalProgress) {
     if (!progressParams)
       return;
-    var docTitleStr = ellipseString(progressParams.docTitle, false);
+    var docTitleStr = progressParams.docTitle;
     if (docTitleStr != docTitle) {
       docTitle = docTitleStr;
+      dialog.title.className = "";
       dialog.title.value = docTitle;
     }
-    var docURLStr = ellipseString(progressParams.docURL, true);
+    var docURLStr = progressParams.docURL;
     if (docURLStr != docURL && dialog.title != null) {
       docURL = docURLStr;
-      if (docTitle == "")
+      if (docTitle == "") {
+        dialog.title.classList.toggle("doFront", docURL.length > 64);
         dialog.title.value = docURLStr;
+      }
     }
   },
 
@@ -77,8 +63,8 @@ function onLoad() {
   if (window.arguments[1]) {
     progressParams = window.arguments[1].QueryInterface(Ci.nsIPrintProgressParams);
     if (progressParams) {
-      docTitle = ellipseString(progressParams.docTitle, false);
-      docURL   = ellipseString(progressParams.docURL, true);
+      docTitle = progressParams.docTitle;
+      docURL   = progressParams.docURL;
     }
   }
 

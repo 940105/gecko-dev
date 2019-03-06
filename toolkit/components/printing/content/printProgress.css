@@ -1,0 +1,16 @@
+#dialog\.title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 64ch;
+}
+
+.doFront {
+    direction: rtl;
+    text-align: left;
+}
+
+.doFront:-moz-locale-dir(rtl) {
+    direction: ltr;
+    text-align: right;
+}
