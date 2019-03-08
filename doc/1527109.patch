@@ -1,0 +1,223 @@
+commit 17df73a7bba66a9e9b49570033ce8be9727caf77
+Author: YG <yg.oh@mail.utoronto.ca>
+Date:   Tue Mar 5 19:59:53 2019 -0500
+
+    Remove ellipseString function and use CSS instead
+
+diff --git a/toolkit/components/printing/content/printPreviewProgress.css b/toolkit/components/printing/content/printPreviewProgress.css
+new file mode 100755
+index 000000000000..83cd93a1bb85
+--- /dev/null
++++ b/toolkit/components/printing/content/printPreviewProgress.css
+@@ -0,0 +1,16 @@
++#dialog\.title {
++    white-space: nowrap;
++    overflow: hidden;
++    text-overflow: ellipsis;
++    width: 64ch;
++}
++
++.doFront {
++    direction: rtl;
++    text-align: left;
++}
++
++.doFront:-moz-locale-dir(rtl) {
++    direction: ltr;
++    text-align: right;
++}
+diff --git a/toolkit/components/printing/content/printPreviewProgress.js b/toolkit/components/printing/content/printPreviewProgress.js
+old mode 100644
+new mode 100755
+index 85ade54c3553..b65b72e93004
+--- a/toolkit/components/printing/content/printPreviewProgress.js
++++ b/toolkit/components/printing/content/printPreviewProgress.js
+@@ -17,23 +17,6 @@ var docTitle = "";
+ var docURL   = "";
+ var progressParams = null;
+ 
+-function ellipseString(aStr, doFront) {
+-  if (!aStr)
+-    return "";
+-
+-  if (aStr.length > 3 && (aStr.substr(0, 3) == "..." || aStr.substr(aStr.length - 4, 3) == "..."))
+-    return aStr;
+-
+-  var fixedLen = 64;
+-  if (aStr.length <= fixedLen)
+-    return aStr;
+-
+-  if (doFront)
+-    return "..." + aStr.substr(aStr.length - fixedLen, fixedLen);
+-
+-  return aStr.substr(0, fixedLen) + "...";
+-}
+-
+ // all progress notifications are done through the nsIWebProgressListener implementation...
+ var progressListener = {
+ 
+@@ -45,16 +28,19 @@ var progressListener = {
+   onProgressChange(aWebProgress, aRequest, aCurSelfProgress, aMaxSelfProgress, aCurTotalProgress, aMaxTotalProgress) {
+     if (!progressParams)
+       return;
+-    var docTitleStr = ellipseString(progressParams.docTitle, false);
++    var docTitleStr = progressParams.docTitle;
+     if (docTitleStr != docTitle) {
+       docTitle = docTitleStr;
++      dialog.title.className = "";
+       dialog.title.value = docTitle;
+     }
+-    var docURLStr = ellipseString(progressParams.docURL, true);
++    var docURLStr = progressParams.docURL;
+     if (docURLStr != docURL && dialog.title != null) {
+       docURL = docURLStr;
+-      if (docTitle == "")
++      if (docTitle == "") {
++        dialog.title.classList.toggle("doFront", docURL.length > 64);
+         dialog.title.value = docURLStr;
++      }
+     }
+   },
+ 
+@@ -77,8 +63,8 @@ function onLoad() {
+   if (window.arguments[1]) {
+     progressParams = window.arguments[1].QueryInterface(Ci.nsIPrintProgressParams);
+     if (progressParams) {
+-      docTitle = ellipseString(progressParams.docTitle, false);
+-      docURL   = ellipseString(progressParams.docURL, true);
++      docTitle = progressParams.docTitle;
++      docURL   = progressParams.docURL;
+     }
+   }
+ 
+diff --git a/toolkit/components/printing/content/printPreviewProgress.xul b/toolkit/components/printing/content/printPreviewProgress.xul
+old mode 100644
+new mode 100755
+index f7649db6d4c4..f11284e06626
+--- a/toolkit/components/printing/content/printPreviewProgress.xul
++++ b/toolkit/components/printing/content/printPreviewProgress.xul
+@@ -5,6 +5,7 @@
+    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+ 
+ <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
++<?xml-stylesheet href="chrome://global/content/printPreviewProgress.css" type="text/css"?>
+ 
+ <dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+         xmlns:html="http://www.w3.org/1999/xhtml"
+diff --git a/toolkit/components/printing/content/printProgress.css b/toolkit/components/printing/content/printProgress.css
+new file mode 100755
+index 000000000000..83cd93a1bb85
+--- /dev/null
++++ b/toolkit/components/printing/content/printProgress.css
+@@ -0,0 +1,16 @@
++#dialog\.title {
++    white-space: nowrap;
++    overflow: hidden;
++    text-overflow: ellipsis;
++    width: 64ch;
++}
++
++.doFront {
++    direction: rtl;
++    text-align: left;
++}
++
++.doFront:-moz-locale-dir(rtl) {
++    direction: ltr;
++    text-align: right;
++}
+diff --git a/toolkit/components/printing/content/printProgress.js b/toolkit/components/printing/content/printProgress.js
+old mode 100644
+new mode 100755
+index 4af72f0f6c50..7577baf9619a
+--- a/toolkit/components/printing/content/printProgress.js
++++ b/toolkit/components/printing/content/printProgress.js
+@@ -20,27 +20,6 @@ var docURL   = "";
+ var progressParams = null;
+ var switchUI = true;
+ 
+-function ellipseString(aStr, doFront) {
+-  if (!aStr) {
+-    return "";
+-  }
+-
+-  if (aStr.length > 3 && (aStr.substr(0, 3) == "..." || aStr.substr(aStr.length - 4, 3) == "...")) {
+-    return aStr;
+-  }
+-
+-  var fixedLen = 64;
+-  if (aStr.length > fixedLen) {
+-    if (doFront) {
+-      var endStr = aStr.substr(aStr.length - fixedLen, fixedLen);
+-      return "..." + endStr;
+-    }
+-    var frontStr = aStr.substr(0, fixedLen);
+-    return frontStr + "...";
+-  }
+-  return aStr;
+-}
+-
+ // all progress notifications are done through the nsIWebProgressListener implementation...
+ var progressListener = {
+     onStateChange(aWebProgress, aRequest, aStateFlags, aStatus) {
+@@ -88,16 +67,18 @@ var progressListener = {
+       }
+ 
+       if (progressParams) {
+-        var docTitleStr = ellipseString(progressParams.docTitle, false);
++        var docTitleStr = progressParams.docTitle;
+         if (docTitleStr != docTitle) {
+           docTitle = docTitleStr;
++          dialog.title.className = "";
+           dialog.title.value = docTitle;
+         }
+         var docURLStr = progressParams.docURL;
+         if (docURLStr != docURL && dialog.title != null) {
+           docURL = docURLStr;
+           if (docTitle == "") {
+-            dialog.title.value = ellipseString(docURLStr, true);
++            dialog.title.classList.toggle("doFront", docURLStr.length > 64);
++            dialog.title.value = docURLStr;
+           }
+         }
+       }
+@@ -152,8 +133,8 @@ function onLoad() {
+     if (window.arguments[1]) {
+       progressParams = window.arguments[1].QueryInterface(Ci.nsIPrintProgressParams);
+       if (progressParams) {
+-        docTitle = ellipseString(progressParams.docTitle, false);
+-        docURL   = ellipseString(progressParams.docURL, true);
++        docTitle = progressParams.docTitle;
++        docURL   = progressParams.docURL;
+       }
+     }
+ 
+diff --git a/toolkit/components/printing/content/printProgress.xul b/toolkit/components/printing/content/printProgress.xul
+old mode 100644
+new mode 100755
+index 7dbc2727272a..9521886026bd
+--- a/toolkit/components/printing/content/printProgress.xul
++++ b/toolkit/components/printing/content/printProgress.xul
+@@ -5,6 +5,7 @@
+    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+ 
+ <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
++<?xml-stylesheet href="chrome://global/content/printProgress.css" type="text/css"?>
+ 
+ <dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+         xmlns:html="http://www.w3.org/1999/xhtml"
+diff --git a/toolkit/components/printing/jar.mn b/toolkit/components/printing/jar.mn
+index 36851bea5d6f..bf710d2fcc89 100644
+--- a/toolkit/components/printing/jar.mn
++++ b/toolkit/components/printing/jar.mn
+@@ -9,8 +9,10 @@ toolkit.jar:
+    content/global/printPageSetup.xul                (content/printPageSetup.xul)
+ #endif
+    content/global/printPreviewProgress.js           (content/printPreviewProgress.js)
++   content/global/printPreviewProgress.css          (content/printPreviewProgress.css)
+    content/global/printPreviewProgress.xul          (content/printPreviewProgress.xul)
+    content/global/printProgress.js                  (content/printProgress.js)
++   content/global/printProgress.css                 (content/printProgress.css)
+    content/global/printProgress.xul                 (content/printProgress.xul)
+ #endif
+    content/global/printPreviewToolbar.js            (content/printPreviewToolbar.js)
